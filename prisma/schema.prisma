@@ -3,21 +3,71 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum LoanStatus {
+  PENDING
+  ACTIVE
+  PAID
+  DEFAULTED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum DocumentType {
+  CONTRACT
+  PAYMENT_PROOF
+  ID_DOCUMENT
+  OTHER
 }
 
 model Loan {
-  id            String   @id @default(cuid())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id            String     @id @default(cuid())
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
   amount        Float
   interestRate  Float
-  term          Int      // Loan term in months
-  status        String   // e.g., 'PENDING', 'ACTIVE', 'PAID', 'DEFAULTED'
+  term          Int        // Loan term in months
+  status        LoanStatus @default(PENDING)
   borrowerName  String
   borrowerEmail String
   description   String?
   startDate     DateTime
   endDate       DateTime
+  payments      Payment[]
+  documents     Document[]
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  amount    Float
+  date      DateTime
+  status    PaymentStatus @default(PENDING)
+  loan      Loan     @relation(fields: [loanId], references: [id])
+  loanId    String
+
+  @@index([loanId])
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name      String
+  type      DocumentType
+  url       String
+  loan      Loan     @relation(fields: [loanId], references: [id])
+  loanId    String
+
+  @@index([loanId])
 }
