@@ -27,12 +27,12 @@ export default async function LoansPage() {
   try {
     const { data: loans, error } = await getLoans();
     if (error) {
+      console.error('Failed to load loans:', error);
+
       return (
         <div className='container mx-auto py-10'>
           <div className='rounded-md border bg-destructive/10 p-4'>
-            <p className='text-sm text-destructive'>
-              Failed to load loans. Please try again later.
-            </p>
+            <p className='text-sm text-destructive'>{error}</p>
           </div>
         </div>
       );
