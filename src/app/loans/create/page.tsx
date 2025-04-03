@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { LoanForm } from '@/components/loan-form';
+import { LoanForm } from '@/components/forms/loans/layout';
 import Link from 'next/link';
 
 export default function CreateLoanPage() {

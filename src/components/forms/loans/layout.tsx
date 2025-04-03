@@ -37,7 +37,10 @@ const loanFormSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
     message: 'Please enter a valid date (YYYY-MM-DD)',
   }),
-  description: z.string().optional(),
+  description: z
+    .string()
+    .transform((val) => (val === '' ? undefined : val))
+    .optional(),
 });
 
 export type LoanFormValues = z.infer<typeof loanFormSchema>;
@@ -45,9 +48,10 @@ export type LoanFormValues = z.infer<typeof loanFormSchema>;
 interface LoanFormProps {
   loan?: Loan;
   onSubmit?: (values: LoanFormValues) => void;
+  submitButton?: React.ReactNode;
 }
 
-export function LoanForm({ loan, onSubmit }: LoanFormProps) {
+export function LoanForm({ loan, onSubmit, submitButton }: LoanFormProps) {
   const router = useRouter();
   const form = useForm<LoanFormValues>({
     resolver: zodResolver(loanFormSchema),
@@ -66,33 +70,43 @@ export function LoanForm({ loan, onSubmit }: LoanFormProps) {
 
   async function handleFormSubmit(values: LoanFormValues) {
     try {
-      console.log('Form values:', values);
+      // Create a single object with all form data
+      const formData = new FormData();
+      const startDate = new Date(values.startDate);
+      const endDate = new Date(startDate);
+      endDate.setMonth(startDate.getMonth() + parseInt(values.term));
 
-      const loanData = {
+      // Use Object.entries to efficiently append all fields
+      Object.entries({
         ...values,
-        amount: parseFloat(values.amount),
-        interestRate: parseFloat(values.interestRate),
-        term: parseInt(values.term),
-        startDate: new Date(values.startDate),
-        endDate: new Date(
-          new Date(values.startDate).setMonth(
-            new Date(values.startDate).getMonth() + parseInt(values.term),
-          ),
-        ),
-      };
+        endDate: endDate.toISOString().split('T')[0],
+      }).forEach(([key, value]) => {
+        // Only append if value exists and is not empty string (unless it's description)
+        if (value !== undefined && (value !== '' || key === 'description')) {
+          formData.append(key, value?.toString() ?? '');
+        }
+      });
 
-      console.log('Processed loan data:', loanData);
-
-      console.log('Submitting form data:', loanData);
-
+      // Use server action with error handling
       const response = loan
-        ? await updateLoan(loan.id, loanData)
-        : await createLoan(loanData);
-
-      console.log('Server response:', response);
+        ? await updateLoan(loan.id, formData)
+        : await createLoan(formData);
 
       if (!response) {
         throw new Error('No response from server');
+      }
+
+      // Handle validation errors efficiently
+      if (response.validationErrors) {
+        Object.entries(response.validationErrors).forEach(
+          ([field, [error]]) => {
+            form.setError(field as keyof LoanFormValues, {
+              type: 'manual',
+              message: error,
+            });
+          },
+        );
+        return;
       }
 
       if (response.error) {
@@ -123,9 +137,17 @@ export function LoanForm({ loan, onSubmit }: LoanFormProps) {
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit((values) =>
-          onSubmit ? onSubmit(values) : handleFormSubmit(values),
-        )}
+        action={async (formData: FormData) => {
+          // Use the native form action for progressive enhancement
+          if (onSubmit) {
+            const values = Object.fromEntries(
+              formData.entries(),
+            ) as unknown as LoanFormValues;
+            await onSubmit(values);
+          } else {
+            await handleFormSubmit(form.getValues());
+          }
+        }}
         className='space-y-8'
       >
         <div className='grid grid-cols-2 gap-6'>
@@ -239,13 +261,15 @@ export function LoanForm({ loan, onSubmit }: LoanFormProps) {
           </div>
         )}
         <div className='flex justify-end space-x-4'>
-          <Button type='submit' disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting
-              ? 'Saving...'
-              : loan
-                ? 'Update Loan'
-                : 'Create Loan'}
-          </Button>
+          {submitButton || (
+            <Button type='submit' disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting
+                ? 'Saving...'
+                : loan
+                  ? 'Update Loan'
+                  : 'Create Loan'}
+            </Button>
+          )}
         </div>
       </form>
     </Form>

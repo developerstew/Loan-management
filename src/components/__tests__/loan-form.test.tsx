@@ -1,6 +1,5 @@
 import { render, screen } from '@/test/test-utils';
-import { LoanForm } from '../loan-form';
-import { Loan } from '@/types';
+import { LoanForm } from '../forms/loans/layout';
 
 jest.mock('next/navigation', () => ({
   useRouter() {
@@ -14,8 +13,6 @@ jest.mock('next/navigation', () => ({
     return '/';
   },
 }));
-
-type LoanFormData = Omit<Loan, 'id' | 'createdAt' | 'updatedAt'>;
 
 describe('LoanForm', () => {
   it('renders all form fields', () => {
