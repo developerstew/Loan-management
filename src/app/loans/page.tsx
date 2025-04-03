@@ -18,13 +18,24 @@ import {
 } from '@/components/ui/table';
 import Link from 'next/link';
 
+export const metadata = {
+  title: 'Loans | Loan Management',
+  description: 'View and manage your loans',
+};
+
 export default async function LoansPage() {
   try {
     const { data: loans, error } = await getLoans();
-    console.log('Database connection successful');
     if (error) {
-      console.error('Database error:', error);
-      throw new Error(error);
+      return (
+        <div className='container mx-auto py-10'>
+          <div className='rounded-md border bg-destructive/10 p-4'>
+            <p className='text-sm text-destructive'>
+              Failed to load loans. Please try again later.
+            </p>
+          </div>
+        </div>
+      );
     }
 
     return (
