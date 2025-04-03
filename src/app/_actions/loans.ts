@@ -39,12 +39,32 @@ export async function createLoan(data: CreateLoanInput) {
 
 export async function getLoans() {
   try {
+    console.log(
+      'Attempting to connect to database with URL:',
+      process.env.DATABASE_URL,
+    );
+
     const loans = await prisma.loan.findMany({
       orderBy: { createdAt: 'desc' },
     });
+
+    console.log('Successfully fetched loans:', loans.length);
     return { data: loans };
   } catch (error) {
-    return { error: 'Failed to fetch loans' };
+    console.error(
+      'Database error in getLoans:',
+      error instanceof Error ? error.message : error,
+    );
+    console.error(
+      'Error stack:',
+      error instanceof Error ? error.stack : 'No stack trace',
+    );
+    console.error('Database URL:', process.env.DATABASE_URL);
+
+    if (error instanceof Error) {
+      return { error: `Failed to fetch loans: ${error.message}` };
+    }
+    return { error: 'Failed to fetch loans: Unknown error' };
   }
 }
 
