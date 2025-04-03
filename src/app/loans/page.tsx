@@ -1,5 +1,9 @@
 import { getLoans } from '@/app/_actions/loans';
-import { LoanCardSkeleton } from '@/components/forms/loans/layout-skeleton';
+import { getStatusStyle } from '@/constants';
+import { DeleteLoanButton } from '@/components/modals/buttons/delete-loan-button';
+import { ViewLoanButton } from '@/components/modals/buttons/view-loan-button';
+import { EditLoanButton } from '@/components/forms/loans/buttons/edit-loan-button';
+
 import { LoanFilters } from '@/components/forms/loans/filters';
 import { type Loan } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -21,7 +25,6 @@ import {
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Pagination } from '@/components/ui/pagination';
-import { type LoanStatus } from '@prisma/client';
 
 export const metadata = {
   title: 'Loans | Loan Management',
@@ -30,10 +33,54 @@ export const metadata = {
 
 function LoadingLoans() {
   return (
-    <div className='grid gap-4'>
-      {Array.from({ length: 3 }).map((_, i) => (
-        <LoanCardSkeleton key={i} />
-      ))}
+    <div className='rounded-md border'>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Borrower</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Interest Rate</TableHead>
+            <TableHead>Term</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Start Date</TableHead>
+            <TableHead className='w-[100px]'>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <TableRow key={i}>
+              <TableCell>
+                <div>
+                  <div className='h-4 w-24 animate-pulse rounded bg-muted' />
+                  <div className='mt-1 h-3 w-32 animate-pulse rounded bg-muted' />
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className='h-4 w-16 animate-pulse rounded bg-muted' />
+              </TableCell>
+              <TableCell>
+                <div className='h-4 w-8 animate-pulse rounded bg-muted' />
+              </TableCell>
+              <TableCell>
+                <div className='h-4 w-20 animate-pulse rounded bg-muted' />
+              </TableCell>
+              <TableCell>
+                <div className='h-6 w-16 animate-pulse rounded-full bg-muted' />
+              </TableCell>
+              <TableCell>
+                <div className='h-4 w-24 animate-pulse rounded bg-muted' />
+              </TableCell>
+              <TableCell>
+                <div className='flex gap-2'>
+                  <div className='size-8 animate-pulse rounded bg-muted' />
+                  <div className='size-8 animate-pulse rounded bg-muted' />
+                  <div className='size-8 animate-pulse rounded bg-muted' />
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -76,8 +123,11 @@ export default async function LoansPage({
           </CardDescription>
           <LoanFilters />
         </CardHeader>
-        <CardContent>
-          <Suspense fallback={<LoadingLoans />}>
+        <CardContent className='p-0'>
+          <Suspense
+            key={`${search}-${status}-${sort}-${page}`}
+            fallback={<LoadingLoans />}
+          >
             <LoanListContent
               search={search}
               status={status}
@@ -133,7 +183,7 @@ async function LoanListContent({
 
   return (
     <div className='space-y-4'>
-      <div className='rounded-md border'>
+      <div className='rounded-md border p-4'>
         <Table>
           <TableHeader>
             <TableRow>
@@ -143,7 +193,7 @@ async function LoanListContent({
               <TableHead>Term</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Start Date</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead className='w-[100px]'>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -179,12 +229,12 @@ async function LoanListContent({
                 </TableCell>
                 <TableCell>
                   <div className='flex items-center gap-2'>
-                    <Button variant='ghost' size='sm' asChild>
-                      <Link href={`/loans/${loan.id}`}>View</Link>
-                    </Button>
-                    <Button variant='ghost' size='sm' asChild>
-                      <Link href={`/loans/${loan.id}/edit`}>Edit</Link>
-                    </Button>
+                    <ViewLoanButton loan={loan} />
+                    <EditLoanButton loanId={loan.id} />
+                    <DeleteLoanButton
+                      loanId={loan.id}
+                      borrowerName={loan.borrowerName}
+                    />
                   </div>
                 </TableCell>
               </TableRow>
@@ -196,5 +246,3 @@ async function LoanListContent({
     </div>
   );
 }
-
-import { getStatusStyle } from '@/constants';

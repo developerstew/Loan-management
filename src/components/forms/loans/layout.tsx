@@ -2,6 +2,9 @@
 
 import { createLoan, updateLoan } from '@/app/_actions/loans';
 import { Button } from '@/components/ui/button';
+import { useTransition } from 'react';
+import { type ReactElement } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Form,
   FormControl,
@@ -14,7 +17,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { type Loan } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
@@ -47,11 +49,10 @@ export type LoanFormValues = z.infer<typeof loanFormSchema>;
 
 interface LoanFormProps {
   loan?: Loan;
-  onSubmit?: (values: LoanFormValues) => void;
-  submitButton?: React.ReactNode;
 }
 
-export function LoanForm({ loan, onSubmit, submitButton }: LoanFormProps) {
+export function LoanForm({ loan }: LoanFormProps): ReactElement {
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const form = useForm<LoanFormValues>({
     resolver: zodResolver(loanFormSchema),
@@ -70,85 +71,54 @@ export function LoanForm({ loan, onSubmit, submitButton }: LoanFormProps) {
 
   async function handleFormSubmit(values: LoanFormValues) {
     try {
-      // Create a single object with all form data
       const formData = new FormData();
       const startDate = new Date(values.startDate);
       const endDate = new Date(startDate);
       endDate.setMonth(startDate.getMonth() + parseInt(values.term));
 
-      // Use Object.entries to efficiently append all fields
       Object.entries({
         ...values,
         endDate: endDate.toISOString().split('T')[0],
       }).forEach(([key, value]) => {
-        // Only append if value exists and is not empty string (unless it's description)
         if (value !== undefined && (value !== '' || key === 'description')) {
           formData.append(key, value?.toString() ?? '');
         }
       });
 
-      // Use server action with error handling
-      const response = loan
-        ? await updateLoan(loan.id, formData)
-        : await createLoan(formData);
-
-      if (!response) {
-        throw new Error('No response from server');
-      }
-
-      // Handle validation errors efficiently
-      if (response.validationErrors) {
-        Object.entries(response.validationErrors).forEach(
-          ([field, [error]]) => {
-            form.setError(field as keyof LoanFormValues, {
-              type: 'manual',
-              message: error,
-            });
-          },
-        );
-        return;
-      }
-
-      if (response.error) {
-        console.error('Server error:', response.error);
-        form.setError('root', {
-          type: 'manual',
-          message: response.error,
-        });
-        return;
-      }
-
-      if (!response.data) {
-        throw new Error('No data returned from server');
-      }
-
-      // Reset form and redirect to loans list
-      router.push('/loans');
-      router.refresh();
+      startTransition(async () => {
+        try {
+          if (loan) {
+            const { error } = await updateLoan(formData, loan.id);
+            if (error) {
+              form.setError('root', { message: error });
+              return;
+            }
+          } else {
+            const { error } = await createLoan(formData);
+            if (error) {
+              form.setError('root', { message: error });
+              return;
+            }
+          }
+          router.push('/loans');
+          router.refresh();
+        } catch (error) {
+          console.error('Server error:', error);
+          form.setError('root', { message: 'Something went wrong' });
+        }
+      });
     } catch (error) {
       console.error('Client error:', error);
-      form.setError('root', {
-        type: 'manual',
-        message: 'Something went wrong. Please try again.',
-      });
+      form.setError('root', { message: 'Something went wrong' });
     }
   }
 
   return (
     <Form {...form}>
       <form
-        action={async (formData: FormData) => {
-          // Use the native form action for progressive enhancement
-          if (onSubmit) {
-            const values = Object.fromEntries(
-              formData.entries(),
-            ) as unknown as LoanFormValues;
-            await onSubmit(values);
-          } else {
-            await handleFormSubmit(form.getValues());
-          }
-        }}
         className='space-y-8'
+        onSubmit={form.handleSubmit(handleFormSubmit)}
+        noValidate
       >
         <div className='grid grid-cols-2 gap-6'>
           <FormField
@@ -255,21 +225,15 @@ export function LoanForm({ loan, onSubmit, submitButton }: LoanFormProps) {
             )}
           />
         </div>
-        {form.formState.errors.root && (
+        {form.formState.errors.root?.message && (
           <div className='rounded-md bg-destructive/15 p-3 text-sm text-destructive'>
             {form.formState.errors.root.message}
           </div>
         )}
         <div className='flex justify-end space-x-4'>
-          {submitButton || (
-            <Button type='submit' disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting
-                ? 'Saving...'
-                : loan
-                  ? 'Update Loan'
-                  : 'Create Loan'}
-            </Button>
-          )}
+          <Button type='submit' loading={isPending}>
+            {loan ? 'Update Loan' : 'Create Loan'}
+          </Button>
         </div>
       </form>
     </Form>

@@ -36,7 +36,7 @@ export default async function EditLoanPage({ params }: EditLoanPageProps) {
               <CardDescription>Update the loan details below</CardDescription>
             </div>
             <Button variant='ghost' asChild>
-              <Link href={`/loans/${resolvedParams.id}`}>Cancel</Link>
+              <Link href='/loans'>Cancel</Link>
             </Button>
           </div>
         </CardHeader>
