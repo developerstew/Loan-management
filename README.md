@@ -4,12 +4,13 @@ A modern full-stack application for managing loans built with Next.js, TypeScrip
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14, React 18, TypeScript
+- **Frontend**: Next.js 15, React 18, TypeScript
 - **Styling**: Tailwind CSS, shadcn/ui
-- **Database**: PostgreSQL with Prisma ORM
-- **API**: tRPC
+- **Database**: Supabase (PostgreSQL) with Prisma ORM
+- **Authentication**: Supabase Auth
 - **Form Handling**: React Hook Form
-- **Testing**: Jest, Playwright
+- **Data Fetching**: React Query
+- **Testing**: Jest
 - **Package Manager**: pnpm
 
 ## Getting Started
@@ -25,7 +26,10 @@ A modern full-stack application for managing loans built with Next.js, TypeScrip
    Create a `.env` file in the root directory with:
 
    ```
-   DATABASE_URL="postgresql://username:password@localhost:5432/loan_management"
+   NEXT_PUBLIC_SUPABASE_URL="your-supabase-project-url"
+   NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
+   DATABASE_URL="your-supabase-pooler-connection-string"
+   DIRECT_URL="your-supabase-direct-connection-string"
    ```
 
 4. Initialize the database:
@@ -41,31 +45,7 @@ A modern full-stack application for managing loans built with Next.js, TypeScrip
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Project Structure
-
-```
-src/
-├── app/              # Next.js app router pages
-├── components/       # React components
-│   └── ui/          # shadcn/ui components
-├── lib/             # Utility functions and shared logic
-├── server/          # Server-side code and API routes
-└── types/           # TypeScript type definitions
-```
-
-## Features
-
-- Create, view, update, and delete loans
-- Track loan status and payments
-- User-friendly interface with modern design
-- Responsive layout for all devices
-- Type-safe API calls with tRPC
-- Form validation with React Hook Form
-- Database interactions with Prisma ORM
-
 ## Development
 
 - Run tests: `pnpm test`
-- Run e2e tests: `pnpm test:e2e`
 - Format code: `pnpm format`
-- Lint code: `pnpm lint`
