@@ -20,7 +20,8 @@ interface EditLoanPageProps {
 
 export default async function EditLoanPage({ params }: EditLoanPageProps) {
   const resolvedParams = await params;
-  const { data: loan, error } = await getLoanById(resolvedParams.id);
+  const id = resolvedParams.id;
+  const { data: loan, error } = await getLoanById(id);
 
   if (error || !loan) {
     notFound();

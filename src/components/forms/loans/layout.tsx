@@ -2,7 +2,7 @@
 
 import { createLoan, updateLoan } from '@/app/_actions/loans';
 import { Button } from '@/components/ui/button';
-import { useTransition } from 'react';
+import { useFormStatus } from 'react-dom';
 import { type ReactElement } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -39,10 +39,7 @@ const loanFormSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
     message: 'Please enter a valid date (YYYY-MM-DD)',
   }),
-  description: z
-    .string()
-    .transform((val) => (val === '' ? undefined : val))
-    .optional(),
+  description: z.string().optional(),
 });
 
 export type LoanFormValues = z.infer<typeof loanFormSchema>;
@@ -52,7 +49,6 @@ interface LoanFormProps {
 }
 
 export function LoanForm({ loan }: LoanFormProps): ReactElement {
-  const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const form = useForm<LoanFormValues>({
     resolver: zodResolver(loanFormSchema),
@@ -76,39 +72,38 @@ export function LoanForm({ loan }: LoanFormProps): ReactElement {
       const endDate = new Date(startDate);
       endDate.setMonth(startDate.getMonth() + parseInt(values.term));
 
-      Object.entries({
-        ...values,
-        endDate: endDate.toISOString().split('T')[0],
-      }).forEach(([key, value]) => {
-        if (value !== undefined && (value !== '' || key === 'description')) {
-          formData.append(key, value?.toString() ?? '');
-        }
-      });
+      // Required fields
+      formData.append('borrowerName', values.borrowerName);
+      formData.append('borrowerEmail', values.borrowerEmail);
+      formData.append('amount', values.amount);
+      formData.append('interestRate', values.interestRate);
+      formData.append('term', values.term);
+      formData.append('startDate', values.startDate);
+      formData.append('endDate', endDate.toISOString().split('T')[0]);
 
-      startTransition(async () => {
-        try {
-          if (loan) {
-            const { error } = await updateLoan(formData, loan.id);
-            if (error) {
-              form.setError('root', { message: error });
-              return;
-            }
-          } else {
-            const { error } = await createLoan(formData);
-            if (error) {
-              form.setError('root', { message: error });
-              return;
-            }
-          }
-          router.push('/loans');
-          router.refresh();
-        } catch (error) {
-          console.error('Server error:', error);
-          form.setError('root', { message: 'Something went wrong' });
+      // Always append description (even if empty) for edit
+      formData.append('description', values.description || '');
+
+      const result = loan
+        ? await updateLoan(loan.id, formData)
+        : await createLoan(formData);
+
+      if (result.error || result.validationErrors) {
+        if (result.validationErrors) {
+          Object.entries(result.validationErrors).forEach(([key, errors]) => {
+            form.setError(key as keyof LoanFormValues, { message: errors[0] });
+          });
+        } else {
+          form.setError('root', {
+            message: result.error || 'Something went wrong',
+          });
         }
-      });
+        return;
+      }
+
+      router.push('/loans');
     } catch (error) {
-      console.error('Client error:', error);
+      console.error('Form submission error:', error);
       form.setError('root', { message: 'Something went wrong' });
     }
   }
@@ -118,7 +113,6 @@ export function LoanForm({ loan }: LoanFormProps): ReactElement {
       <form
         className='space-y-8'
         onSubmit={form.handleSubmit(handleFormSubmit)}
-        noValidate
       >
         <div className='grid grid-cols-2 gap-6'>
           <FormField
@@ -231,8 +225,8 @@ export function LoanForm({ loan }: LoanFormProps): ReactElement {
           </div>
         )}
         <div className='flex justify-end space-x-4'>
-          <Button type='submit' loading={isPending}>
-            {loan ? 'Update Loan' : 'Create Loan'}
+          <Button type='submit' loading={useFormStatus().pending}>
+            {loan ? 'Update' : 'Create'} Loan
           </Button>
         </div>
       </form>

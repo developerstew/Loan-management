@@ -6,7 +6,7 @@ const baseLoanSchema = z.object({
   term: z.number().positive('Term must be positive'),
   borrowerName: z.string().min(1, 'Borrower name is required'),
   borrowerEmail: z.string().email('Invalid email address'),
-  description: z.string().optional(),
+  description: z.string().optional().or(z.literal('')),
   startDate: z.date(),
   endDate: z.date(),
 });

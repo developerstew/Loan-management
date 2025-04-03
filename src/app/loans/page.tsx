@@ -3,7 +3,7 @@ import { getStatusStyle } from '@/constants';
 import { DeleteLoanButton } from '@/components/modals/buttons/delete-loan-button';
 import { ViewLoanButton } from '@/components/modals/buttons/view-loan-button';
 import { EditLoanButton } from '@/components/forms/loans/buttons/edit-loan-button';
-
+import { LoadingLoans } from '@/components/specific/page/loans/loading-loans';
 import { LoanFilters } from '@/components/forms/loans/filters';
 import { type Loan } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -31,76 +31,29 @@ export const metadata = {
   description: 'View and manage your loans',
 };
 
-function LoadingLoans() {
-  return (
-    <div className='rounded-md border'>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Borrower</TableHead>
-            <TableHead>Amount</TableHead>
-            <TableHead>Interest Rate</TableHead>
-            <TableHead>Term</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Start Date</TableHead>
-            <TableHead className='w-[100px]'>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <TableRow key={i}>
-              <TableCell>
-                <div>
-                  <div className='h-4 w-24 animate-pulse rounded bg-muted' />
-                  <div className='mt-1 h-3 w-32 animate-pulse rounded bg-muted' />
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className='h-4 w-16 animate-pulse rounded bg-muted' />
-              </TableCell>
-              <TableCell>
-                <div className='h-4 w-8 animate-pulse rounded bg-muted' />
-              </TableCell>
-              <TableCell>
-                <div className='h-4 w-20 animate-pulse rounded bg-muted' />
-              </TableCell>
-              <TableCell>
-                <div className='h-6 w-16 animate-pulse rounded-full bg-muted' />
-              </TableCell>
-              <TableCell>
-                <div className='h-4 w-24 animate-pulse rounded bg-muted' />
-              </TableCell>
-              <TableCell>
-                <div className='flex gap-2'>
-                  <div className='size-8 animate-pulse rounded bg-muted' />
-                  <div className='size-8 animate-pulse rounded bg-muted' />
-                  <div className='size-8 animate-pulse rounded bg-muted' />
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
+interface SearchParams {
+  search?: string;
+  status?: string;
+  sort?: string;
+  page?: string;
+  per_page?: string;
 }
 
 export default async function LoansPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<SearchParams>;
 }) {
-  const search =
-    typeof searchParams.search === 'string' ? searchParams.search : '';
-  const status =
-    typeof searchParams.status === 'string' ? searchParams.status : '';
-  const sort = typeof searchParams.sort === 'string' ? searchParams.sort : '';
-  const page =
-    typeof searchParams.page === 'string' ? parseInt(searchParams.page) : 1;
-  const per_page =
-    typeof searchParams.per_page === 'string'
-      ? parseInt(searchParams.per_page)
-      : 10;
+  const {
+    search = '',
+    status = '',
+    sort = '',
+    page: pageStr = '1',
+    per_page: perPageStr = '10',
+  } = await Promise.resolve(searchParams);
+
+  const page = parseInt(pageStr);
+  const per_page = parseInt(perPageStr);
 
   return (
     <div className='container mx-auto py-10'>
@@ -115,19 +68,16 @@ export default async function LoansPage({
           <Link href='/loans/create'>Create New Loan</Link>
         </Button>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Active Loans</CardTitle>
-          <CardDescription>
-            A list of all your active loans and their current status.
-          </CardDescription>
-          <LoanFilters />
-        </CardHeader>
-        <CardContent className='p-0'>
-          <Suspense
-            key={`${search}-${status}-${sort}-${page}`}
-            fallback={<LoadingLoans />}
-          >
+      <Suspense fallback={<LoadingLoans />}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Active Loans</CardTitle>
+            <CardDescription>
+              A list of all your active loans and their current status.
+            </CardDescription>
+            <LoanFilters />
+          </CardHeader>
+          <CardContent className='p-0'>
             <LoanListContent
               search={search}
               status={status}
@@ -135,9 +85,9 @@ export default async function LoansPage({
               page={page}
               per_page={per_page}
             />
-          </Suspense>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </Suspense>
     </div>
   );
 }

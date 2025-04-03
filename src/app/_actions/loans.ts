@@ -23,7 +23,7 @@ export async function createLoan(
       term: Number(formData.get('term')),
       borrowerName: formData.get('borrowerName') as string,
       borrowerEmail: formData.get('borrowerEmail') as string,
-      description: formData.get('description') as string,
+      description: formData.get('description')?.toString() || undefined,
       startDate: new Date(formData.get('startDate') as string),
       endDate: new Date(formData.get('endDate') as string),
     };

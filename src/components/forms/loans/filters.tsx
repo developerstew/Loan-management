@@ -66,7 +66,12 @@ export function LoanFilters() {
     [pathname, router, createQueryString],
   );
 
-  const debouncedSearch = debounce(handleSearch, 500);
+  // Create a type-safe debounced function
+  const debouncedSearch = debounce((value: unknown) => {
+    if (typeof value === 'string') {
+      handleSearch(value);
+    }
+  }, 500);
 
   return (
     <div className='flex items-center gap-4'>
