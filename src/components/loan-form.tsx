@@ -44,9 +44,10 @@ export type LoanFormValues = z.infer<typeof loanFormSchema>;
 
 interface LoanFormProps {
   loan?: Loan;
+  onSubmit?: (values: LoanFormValues) => void;
 }
 
-export function LoanForm({ loan }: LoanFormProps) {
+export function LoanForm({ loan, onSubmit }: LoanFormProps) {
   const router = useRouter();
   const form = useForm<LoanFormValues>({
     resolver: zodResolver(loanFormSchema),
@@ -63,7 +64,7 @@ export function LoanForm({ loan }: LoanFormProps) {
     },
   });
 
-  async function onSubmit(values: LoanFormValues) {
+  async function handleFormSubmit(values: LoanFormValues) {
     try {
       console.log('Form values:', values);
 
@@ -109,7 +110,12 @@ export function LoanForm({ loan }: LoanFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
+      <form
+        onSubmit={form.handleSubmit((values) =>
+          onSubmit ? onSubmit(values) : handleFormSubmit(values),
+        )}
+        className='space-y-8'
+      >
         <div className='grid grid-cols-2 gap-6'>
           <FormField
             control={form.control}
