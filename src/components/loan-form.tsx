@@ -83,17 +83,29 @@ export function LoanForm({ loan, onSubmit }: LoanFormProps) {
 
       console.log('Processed loan data:', loanData);
 
-      const { error } = loan
+      console.log('Submitting form data:', loanData);
+
+      const response = loan
         ? await updateLoan(loan.id, loanData)
         : await createLoan(loanData);
 
-      if (error) {
-        console.error('Server error:', error);
+      console.log('Server response:', response);
+
+      if (!response) {
+        throw new Error('No response from server');
+      }
+
+      if (response.error) {
+        console.error('Server error:', response.error);
         form.setError('root', {
           type: 'manual',
-          message: error,
+          message: response.error,
         });
         return;
+      }
+
+      if (!response.data) {
+        throw new Error('No data returned from server');
       }
 
       // Reset form and redirect to loans list

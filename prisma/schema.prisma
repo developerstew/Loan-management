@@ -8,6 +8,49 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model Loan {
+  id            String     @id @default(cuid())
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  amount        Float
+  interestRate  Float
+  term          Int
+  status        LoanStatus @default(PENDING)
+  borrowerName  String
+  borrowerEmail String
+  description   String?
+  startDate     DateTime
+  endDate       DateTime
+  documents     Document[]
+  payments      Payment[]
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  amount    Float
+  date      DateTime
+  status    PaymentStatus @default(PENDING)
+  loanId    String
+  loan      Loan          @relation(fields: [loanId], references: [id])
+
+  @@index([loanId])
+}
+
+model Document {
+  id        String       @id @default(cuid())
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  name      String
+  type      DocumentType
+  url       String
+  loanId    String
+  loan      Loan         @relation(fields: [loanId], references: [id])
+
+  @@index([loanId])
+}
+
 enum LoanStatus {
   PENDING
   ACTIVE
@@ -27,47 +70,4 @@ enum DocumentType {
   PAYMENT_PROOF
   ID_DOCUMENT
   OTHER
-}
-
-model Loan {
-  id            String     @id @default(cuid())
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  amount        Float
-  interestRate  Float
-  term          Int        // Loan term in months
-  status        LoanStatus @default(PENDING)
-  borrowerName  String
-  borrowerEmail String
-  description   String?
-  startDate     DateTime
-  endDate       DateTime
-  payments      Payment[]
-  documents     Document[]
-}
-
-model Payment {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  amount    Float
-  date      DateTime
-  status    PaymentStatus @default(PENDING)
-  loan      Loan     @relation(fields: [loanId], references: [id])
-  loanId    String
-
-  @@index([loanId])
-}
-
-model Document {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  name      String
-  type      DocumentType
-  url       String
-  loan      Loan     @relation(fields: [loanId], references: [id])
-  loanId    String
-
-  @@index([loanId])
 }

@@ -16,16 +16,24 @@ export type CreateLoanInput = {
 
 export async function createLoan(data: CreateLoanInput) {
   try {
+    console.log('Creating loan with data:', JSON.stringify(data, null, 2));
+
     const loan = await prisma.loan.create({
       data: {
         ...data,
         status: 'PENDING',
       },
     });
+
+    console.log('Loan created successfully:', JSON.stringify(loan, null, 2));
     revalidatePath('/loans');
     return { data: loan };
   } catch (error) {
-    return { error: 'Failed to create loan' };
+    console.error('Error creating loan:', error);
+    if (error instanceof Error) {
+      return { error: `Failed to create loan: ${error.message}` };
+    }
+    return { error: 'Failed to create loan: Unknown error' };
   }
 }
 
