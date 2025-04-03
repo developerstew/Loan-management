@@ -8,7 +8,15 @@ import {
 } from '@/components/ui/card';
 import Link from 'next/link';
 
-export default function LoanDetailPage({ params }: { params: { id: string } }) {
+interface LoanDetailPageProps {
+  params: Promise<{
+    id: string;
+  }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function LoanDetailPage({ params }: LoanDetailPageProps) {
+  const resolvedParams = await params;
   return (
     <div className='container mx-auto py-10'>
       <Card>
@@ -22,7 +30,7 @@ export default function LoanDetailPage({ params }: { params: { id: string } }) {
             </div>
             <div className='flex gap-4'>
               <Button variant='outline' asChild>
-                <Link href={`/loans/${params.id}/edit`}>Edit Loan</Link>
+                <Link href={`/loans/${resolvedParams.id}/edit`}>Edit Loan</Link>
               </Button>
               <Button variant='ghost' asChild>
                 <Link href='/loans'>Back to Loans</Link>

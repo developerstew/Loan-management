@@ -12,13 +12,15 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 interface EditLoanPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export default async function EditLoanPage({ params }: EditLoanPageProps) {
-  const { data: loan, error } = await getLoanById(params.id);
+  const resolvedParams = await params;
+  const { data: loan, error } = await getLoanById(resolvedParams.id);
 
   if (error || !loan) {
     notFound();
@@ -34,7 +36,7 @@ export default async function EditLoanPage({ params }: EditLoanPageProps) {
               <CardDescription>Update the loan details below</CardDescription>
             </div>
             <Button variant='ghost' asChild>
-              <Link href={`/loans/${params.id}`}>Cancel</Link>
+              <Link href={`/loans/${resolvedParams.id}`}>Cancel</Link>
             </Button>
           </div>
         </CardHeader>
