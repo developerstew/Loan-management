@@ -34,22 +34,26 @@ export function CreateLoanForm() {
     try {
       console.log('Form values:', values);
 
-      const loanData = {
-        ...values,
-        amount: parseFloat(values.amount),
-        interestRate: parseFloat(values.interestRate),
-        term: parseInt(values.term),
-        startDate: new Date(values.startDate),
-        endDate: new Date(
-          new Date(values.startDate).setMonth(
-            new Date(values.startDate).getMonth() + parseInt(values.term),
-          ),
-        ),
-      };
+      const formData = new FormData();
+      formData.append('borrowerName', values.borrowerName);
+      formData.append('borrowerEmail', values.borrowerEmail);
+      formData.append('amount', values.amount);
+      formData.append('interestRate', values.interestRate);
+      formData.append('term', values.term);
+      formData.append('startDate', values.startDate);
+      if (values.description) {
+        formData.append('description', values.description);
+      }
 
-      console.log('Processed loan data:', loanData);
+      // Calculate end date
+      const startDate = new Date(values.startDate);
+      const endDate = new Date(startDate);
+      endDate.setMonth(startDate.getMonth() + parseInt(values.term));
+      formData.append('endDate', endDate.toISOString());
 
-      const { error } = await createLoan(loanData);
+      console.log('Submitting form data...');
+
+      const { error } = await createLoan(formData);
 
       if (error) {
         console.error('Server error:', error);

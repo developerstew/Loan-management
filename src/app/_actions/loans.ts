@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { log } from '@/lib/logger';
 
 import { createLoanSchema, updateLoanSchema } from '@/lib/validations/loan';
-import { type Loan } from '@prisma/client';
+import { type Loan, type Prisma } from '@prisma/client';
 
 export type ActionResponse<T> = {
   data?: T;
@@ -54,16 +54,98 @@ export async function createLoan(
   }
 }
 
-export async function getLoans(): Promise<ActionResponse<Loan[]>> {
-  try {
-    log.info('Fetching loans');
+interface GetLoansOptions {
+  search?: string;
+  status?: string;
+  sort?: string;
+  page?: number;
+  per_page?: number;
+}
 
+export async function getLoans(
+  options: GetLoansOptions = {},
+): Promise<ActionResponse<{ loans: Loan[]; total: number }>> {
+  try {
+    log.info('Fetching loans with options', options);
+
+    const {
+      search = '',
+      status = '',
+      sort = '',
+      page = 1,
+      per_page = 10,
+    } = options;
+
+    // Build where clause
+    const where: Prisma.LoanWhereInput = {};
+    if (status && status !== 'all') {
+      where.status = status as Loan['status'];
+    }
+    if (search) {
+      where.OR = [
+        { borrowerName: { contains: search, mode: 'insensitive' } },
+        { borrowerEmail: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    // Build order by
+    let orderBy: Prisma.LoanOrderByWithRelationInput = { createdAt: 'desc' };
+    switch (sort) {
+      case 'latest':
+        orderBy = { createdAt: 'desc' };
+        break;
+      case 'borrower_asc':
+        orderBy = { borrowerName: 'asc' };
+        break;
+      case 'borrower_desc':
+        orderBy = { borrowerName: 'desc' };
+        break;
+      case 'amount_asc':
+        orderBy = { amount: 'asc' };
+        break;
+      case 'amount_desc':
+        orderBy = { amount: 'desc' };
+        break;
+      case 'rate_asc':
+        orderBy = { interestRate: 'asc' };
+        break;
+      case 'rate_desc':
+        orderBy = { interestRate: 'desc' };
+        break;
+      case 'term_asc':
+        orderBy = { term: 'asc' };
+        break;
+      case 'term_desc':
+        orderBy = { term: 'desc' };
+        break;
+      case 'status_asc':
+        orderBy = { status: 'asc' };
+        break;
+      case 'status_desc':
+        orderBy = { status: 'desc' };
+        break;
+      case 'start_date_asc':
+        orderBy = { startDate: 'asc' };
+        break;
+      case 'start_date_desc':
+        orderBy = { startDate: 'desc' };
+        break;
+    }
+
+    // Get total count
+    const total = await prisma.loan.count({ where });
+
+    // Get paginated loans
     const loans = await prisma.loan.findMany({
-      orderBy: { createdAt: 'desc' },
+      where,
+      orderBy,
+      skip: (page - 1) * per_page,
+      take: per_page,
     });
 
-    log.info('Successfully fetched loans', { count: loans.length });
-    return { data: loans };
+    log.info('Successfully fetched loans', { count: loans.length, total });
+    return { data: { loans, total } };
   } catch (error) {
     log.error('Failed to fetch loans', error);
     return { error: error instanceof Error ? error.message : 'Unknown error' };
