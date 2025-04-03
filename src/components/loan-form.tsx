@@ -1,6 +1,6 @@
 'use client';
 
-import { createLoan } from '@/app/_actions/loans';
+import { createLoan, updateLoan } from '@/app/_actions/loans';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -12,7 +12,9 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { type Loan } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
@@ -40,17 +42,24 @@ const loanFormSchema = z.object({
 
 export type LoanFormValues = z.infer<typeof loanFormSchema>;
 
-export function CreateLoanForm() {
+interface LoanFormProps {
+  loan?: Loan;
+}
+
+export function LoanForm({ loan }: LoanFormProps) {
+  const router = useRouter();
   const form = useForm<LoanFormValues>({
     resolver: zodResolver(loanFormSchema),
     defaultValues: {
-      borrowerName: '',
-      borrowerEmail: '',
-      amount: '',
-      interestRate: '',
-      term: '',
-      startDate: '',
-      description: '',
+      borrowerName: loan?.borrowerName ?? '',
+      borrowerEmail: loan?.borrowerEmail ?? '',
+      amount: loan?.amount?.toString() ?? '',
+      interestRate: loan?.interestRate?.toString() ?? '',
+      term: loan?.term?.toString() ?? '',
+      startDate: loan?.startDate
+        ? new Date(loan.startDate).toISOString().split('T')[0]
+        : '',
+      description: loan?.description ?? '',
     },
   });
 
@@ -73,7 +82,9 @@ export function CreateLoanForm() {
 
       console.log('Processed loan data:', loanData);
 
-      const { error } = await createLoan(loanData);
+      const { error } = loan
+        ? await updateLoan(loan.id, loanData)
+        : await createLoan(loanData);
 
       if (error) {
         console.error('Server error:', error);
@@ -85,8 +96,8 @@ export function CreateLoanForm() {
       }
 
       // Reset form and redirect to loans list
-      form.reset();
-      window.location.href = '/loans';
+      router.push('/loans');
+      router.refresh();
     } catch (error) {
       console.error('Client error:', error);
       form.setError('root', {
@@ -211,7 +222,11 @@ export function CreateLoanForm() {
         )}
         <div className='flex justify-end space-x-4'>
           <Button type='submit' disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? 'Creating...' : 'Create Loan'}
+            {form.formState.isSubmitting
+              ? 'Saving...'
+              : loan
+                ? 'Update Loan'
+                : 'Create Loan'}
           </Button>
         </div>
       </form>

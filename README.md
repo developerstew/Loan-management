@@ -16,17 +16,20 @@ A modern full-stack application for managing loans built with Next.js, TypeScrip
 
 1. Clone the repository
 2. Install dependencies:
+
    ```bash
    pnpm install
    ```
 
 3. Set up your environment variables:
    Create a `.env` file in the root directory with:
+
    ```
    DATABASE_URL="postgresql://username:password@localhost:5432/loan_management"
    ```
 
 4. Initialize the database:
+
    ```bash
    pnpm prisma db push
    ```
